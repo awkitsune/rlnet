@@ -338,8 +338,9 @@ namespace RLNET
         /// <summary>
         /// Opens the window and begins the game loop.
         /// </summary>
-        public void Run(double fps = 30d)
+        public void Run(VSyncMode vSyncMode = VSyncMode.Adaptive, double fps = 30d)
         {
+            window.VSync = vSyncMode;
             window.Run(fps);
         }
 
