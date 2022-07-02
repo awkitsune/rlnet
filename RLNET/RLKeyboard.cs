@@ -24,6 +24,8 @@
 #endregion
 
 using OpenTK;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,19 +41,25 @@ namespace RLNET
         private bool capsLock;
         private bool scrollLock;
 
-        internal RLKeyboard(GameWindow gameWindow)
+        internal RLKeyboard(OpenTK.Windowing.Desktop.GameWindow gameWindow)
         {
             gameWindow.KeyDown += gameWindow_KeyDown;
         }
 
-        private void gameWindow_KeyDown(object sender, OpenTK.Input.KeyboardKeyEventArgs e)
+        private void gameWindow_KeyDown(KeyboardKeyEventArgs obj)
         {
-            if (e.Key == OpenTK.Input.Key.NumLock) numLock = !numLock;
-            else if (e.Key == OpenTK.Input.Key.CapsLock) capsLock = !capsLock;
-            else if (e.Key == OpenTK.Input.Key.ScrollLock) scrollLock = !scrollLock;
-            RLKeyPress newKeyPress = new RLKeyPress((RLKey)e.Key, e.Alt, e.Shift, e.Control, e.IsRepeat, numLock, capsLock, scrollLock);
+            if (obj.Key == Keys.NumLock) numLock = !numLock;
+            else if (obj.Key == Keys.CapsLock) capsLock = !capsLock;
+            else if (obj.Key == Keys.ScrollLock) scrollLock = !scrollLock;
+            RLKeyPress newKeyPress = new RLKeyPress((RLKey)obj.Key, obj.Alt, obj.Shift, obj.Control, obj.IsRepeat, numLock, capsLock, scrollLock);
             if (keyPress != newKeyPress) keyPress = newKeyPress;
         }
+
+        /*
+        private void gameWindow_KeyDown(object sender, OpenTK.Input.KeyboardKeyEventArgs e)
+        {
+            
+        }*/
 
         /// <summary>
         /// Checks to see if a key was pressed.

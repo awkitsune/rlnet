@@ -34,8 +34,8 @@ namespace RLNET
 {
     public enum RLWindowBorder
     {
-        Fixed = WindowBorder.Fixed,
-        Hidden = WindowBorder.Hidden,
-        Resizable = WindowBorder.Resizable
+        Fixed = OpenTK.Windowing.Common.WindowBorder.Fixed,
+        Hidden = OpenTK.Windowing.Common.WindowBorder.Hidden,
+        Resizable = OpenTK.Windowing.Common.WindowBorder.Resizable
     }
 }

@@ -23,12 +23,10 @@
  */
 #endregion
 
-using OpenTK;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RLNET
 {
@@ -69,6 +67,42 @@ namespace RLNET
             window.MouseUp += window_MouseUp;
         }
 
+        private void window_MouseUp(MouseButtonEventArgs obj)
+        {
+            if (obj.Button == MouseButton.Left)
+            {
+                LeftPressed = false;
+                leftClick = true;
+            }
+            else if (obj.Button == MouseButton.Right)
+            {
+                RightPressed = false;
+                rightClick = true;
+            }
+        }
+
+        private void window_MouseDown(MouseButtonEventArgs obj)
+        {
+            if (obj.Button == MouseButton.Left)
+            {
+                LeftPressed = true;
+                leftClick = false;
+            }
+            else if (obj.Button == MouseButton.Right)
+            {
+                RightPressed = true;
+                rightClick = false;
+            }
+        }
+
+        private void window_MouseMove(MouseMoveEventArgs obj)
+        {
+            X = (int)((obj.X - offsetX) / (charWidth * scale));
+            Y = (int)((obj.Y - offsetY) / (charHeight * scale));
+            rightClick = false;
+            leftClick = false;
+        }
+
         internal void Calibrate(int charWidth, int charHeight, int offsetX, int offsetY, float scale)
         {
             this.charWidth = charWidth;
@@ -76,42 +110,6 @@ namespace RLNET
             this.offsetX = offsetX;
             this.offsetY = offsetY;
             this.scale = scale;
-        }
-
-        private void window_MouseUp(object sender, OpenTK.Input.MouseButtonEventArgs e)
-        {
-            if (e.Button == OpenTK.Input.MouseButton.Left)
-            {
-                LeftPressed = false;
-                leftClick = true;
-            }
-            else if (e.Button == OpenTK.Input.MouseButton.Right)
-            {
-                RightPressed = false;
-                rightClick = true;
-            }
-        }
-
-        private void window_MouseDown(object sender, OpenTK.Input.MouseButtonEventArgs e)
-        {
-            if (e.Button == OpenTK.Input.MouseButton.Left)
-            {
-                LeftPressed = true;
-                leftClick = false;
-            }
-            else if (e.Button == OpenTK.Input.MouseButton.Right)
-            {
-                RightPressed = true;
-                rightClick = false;
-            }
-        }
-
-        private void window_MouseMove(object sender, OpenTK.Input.MouseMoveEventArgs e)
-        {
-            X = (int)((e.X - offsetX) / (charWidth * scale));
-            Y = (int)((e.Y - offsetY) / (charHeight * scale));
-            rightClick = false;
-            leftClick = false;
         }
 
         /// <summary>

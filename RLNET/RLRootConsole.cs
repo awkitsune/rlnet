@@ -24,6 +24,8 @@
 #endregion
 
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,6 +34,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using OpenTK;
 using OpenTK.Graphics;
+using OpenTK.Windowing.Common;
 
 namespace RLNET
 {
@@ -133,7 +136,10 @@ namespace RLNET
             this.charHeight = settings.CharHeight;
             this.resizeType = settings.ResizeType;
 
-            window = new GameWindow((int)(settings.Width * charWidth * scale), (int)(settings.Height * charHeight * scale), GraphicsMode.Default);
+            window = new GameWindow(
+                new GameWindowSettings() { }, 
+                new NativeWindowSettings() { Size = new Vector2i((int)(settings.Width * charWidth * scale), (int)(settings.Height * charHeight * scale)), });
+
             window.WindowBorder = (WindowBorder)settings.WindowBorder;
             if (settings.StartWindowState == RLWindowState.Fullscreen || settings.StartWindowState == RLWindowState.Maximized)
             {
@@ -145,7 +151,6 @@ namespace RLNET
             window.UpdateFrame += window_UpdateFrame;
             window.Load += window_Load;
             window.Resize += window_Resize;
-            window.Closed += window_Closed;
             window.Closing += window_Closing;
             Mouse = new RLMouse(window);
             Keyboard = new RLKeyboard(window);
@@ -159,15 +164,29 @@ namespace RLNET
             CalcWindow(true);
         }
 
-        void window_Load(object sender, EventArgs e)
+        private void window_Load()
         {
             window.VSync = VSyncMode.On;
-            if (OnLoad != null) OnLoad(this, e);
+            if (OnLoad != null) OnLoad(this, new EventArgs());
         }
 
-        void window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void window_Resize(OpenTK.Windowing.Common.ResizeEventArgs obj)
+        {
+            CalcWindow(false);
+        }
+
+        void window_Closing(System.ComponentModel.CancelEventArgs e)
         {
             if (OnClosing != null) OnClosing(this, e);
+
+            closed = true;
+
+            GL.DeleteBuffer(vboId);
+            GL.DeleteBuffer(iboId);
+            GL.DeleteBuffer(tcboId);
+            GL.DeleteBuffer(foreColorId);
+            GL.DeleteBuffer(backColorId);
+            GL.DeleteTexture(texId);
         }
 
         /// <summary>
@@ -177,8 +196,7 @@ namespace RLNET
         /// <param name="height">The new height of the window, in pixels.</param>
         public void ResizeWindow(int width, int height)
         {
-            window.Width = width;
-            window.Height = height;
+            window.Size = new Vector2i(width, height);
         }
 
         public void SetWindowState(RLWindowState windowState)
@@ -209,7 +227,7 @@ namespace RLNET
                     int viewWidth = (int)(Width * charWidth * scale);
                     int viewHeight = (int)(Height * charHeight * scale);
 
-                    if (viewWidth != window.Width || viewHeight != window.Height)
+                    if (viewWidth != window.Size.X || viewHeight != window.Size.Y)
                     {
                         ResizeWindow(viewWidth, viewHeight);
                     }
@@ -227,19 +245,14 @@ namespace RLNET
             window.Close();
         }
 
-        void window_Resize(object sender, EventArgs e)
-        {
-            CalcWindow(false);
-        }
-
         private void CalcWindow(bool startup)
         {
             if (resizeType == RLResizeType.None)
             {
                 int viewWidth = (int)(Width * charWidth * scale);
                 int viewHeight = (int)(Height * charHeight * scale);
-                int newOffsetX = (window.Width - viewWidth) / 2;
-                int newOffsetY = (window.Height - viewHeight) / 2;
+                int newOffsetX = (window.Size.X - viewWidth) / 2;
+                int newOffsetY = (window.Size.Y - viewHeight) / 2;
 
                 if (startup || offsetX != newOffsetX || offsetY != newOffsetY)
                 {
@@ -256,8 +269,8 @@ namespace RLNET
             }
             else if (resizeType == RLResizeType.ResizeCells)
             {
-                int width = window.Width / charWidth;
-                int height = window.Height / charHeight;
+                int width = window.Size.X / charWidth;
+                int height = window.Size.Y / charHeight;
 
                 if (startup || width != Width || height != Height)
                 {
@@ -270,11 +283,11 @@ namespace RLNET
             }
             else if (resizeType == RLResizeType.ResizeScale)
             {
-                float newScale = Math.Min(window.Width / (charWidth * Width), window.Height / (charHeight * Height));
+                float newScale = Math.Min(window.Size.X / (charWidth * Width), window.Size.Y / (charHeight * Height));
                 int viewWidth = (int)(Width * charWidth * newScale);
                 int viewHeight = (int)(Height * charHeight * newScale);
-                int newOffsetX = (window.Width - viewWidth) / 2;
-                int newOffsetY = (window.Height - viewHeight) / 2;
+                int newOffsetX = (window.Size.X - viewWidth) / 2;
+                int newOffsetY = (window.Size.Y - viewHeight) / 2;
 
                 if (startup || newScale != scale || offsetX != newOffsetX || offsetY != newOffsetY)
                 {
@@ -341,7 +354,8 @@ namespace RLNET
         public void Run(VSyncMode vSyncMode = VSyncMode.Adaptive, double fps = 30d)
         {
             window.VSync = vSyncMode;
-            window.Run(fps);
+            window.UpdateFrequency = fps;
+            window.Run();
         }
 
         /// <summary>
@@ -366,11 +380,11 @@ namespace RLNET
         {
             set
             {
-                window.CursorVisible = value;
+                window.CursorState = value ? CursorState.Normal : CursorState.Hidden;
             }
             get
             {
-                return window.CursorVisible;
+                return window.CursorState == CursorState.Normal || window.CursorState == CursorState.Grabbed;
             }
         }
 
@@ -383,28 +397,16 @@ namespace RLNET
             return closed;
         }
 
-        private void window_UpdateFrame(object sender, FrameEventArgs e)
+        private void window_UpdateFrame(FrameEventArgs e)
         {
             if (Update != null)
                 Update(this, new UpdateEventArgs(e.Time));
         }
 
-        private void window_RenderFrame(object sender, FrameEventArgs e)
+        private void window_RenderFrame(FrameEventArgs e)
         {
             if (Render != null)
                 Render(this, new UpdateEventArgs(e.Time));
-        }
-
-        private void window_Closed(object sender, EventArgs e)
-        {
-            closed = true;
-
-            GL.DeleteBuffer(vboId);
-            GL.DeleteBuffer(iboId);
-            GL.DeleteBuffer(tcboId);
-            GL.DeleteBuffer(foreColorId);
-            GL.DeleteBuffer(backColorId);
-            GL.DeleteTexture(texId);
         }
 
         /// <summary>
@@ -470,7 +472,7 @@ namespace RLNET
             GL.Enable(EnableCap.Blend);
             GL.Disable(EnableCap.Lighting);
             GL.Disable(EnableCap.DepthTest);
-            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.BindTexture(TextureTarget.Texture2D, texId);
             GL.EnableClientState(ArrayCap.VertexArray);
             GL.EnableClientState(ArrayCap.IndexArray);

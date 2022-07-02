@@ -92,9 +92,9 @@ namespace RLNET
             this.b = (float)b / 255f;
         }
 
-        internal OpenTK.Vector3 ToVector3()
+        internal OpenTK.Mathematics.Vector3 ToVector3()
         {
-            return new OpenTK.Vector3(r, g, b);
+            return new OpenTK.Mathematics.Vector3(r, g, b);
         }
 
         /// <summary>
